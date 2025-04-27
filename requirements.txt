@@ -1,0 +1,7 @@
+python-telegram-bot==20.3
+selenium==4.9.0
+beautifulsoup4==4.12.2
+requests==2.31.0
+fake-useragent==1.2.1
+python-dotenv==1.0.0
+webdriver-manager==3.8.6  # Opcional (gerencia automaticamente o ChromeDriver)
