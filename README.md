@@ -1,5 +1,7 @@
 📢 FURIA CS Bot - README
+
 🇧🇷 Português
+
 🤖 Sobre o Projeto
 Bot de Telegram não-oficial para acompanhar a FURIA Esports no cenário de Counter-Strike.
 Inclui também uma Landing Page para apresentar o projeto.
@@ -27,8 +29,8 @@ Flask
 
 🚀 Como Executar
 Configure seu arquivo .env com o token do bot:
-
 TELEGRAM_TOKEN=seu_token_aqui
+
 Inicie o bot:
 python bot_principal.py
 
@@ -45,7 +47,9 @@ Em caso de dúvidas:
 👨‍💻 Desenvolvido por:
 William Bruno
 
+
 🇺🇸 English
+
 🤖 About the Project
 Unofficial Telegram Bot to track FURIA Esports in the Counter-Strike scene.
 Also includes a simple Landing Page to present the project.
@@ -69,8 +73,8 @@ requests==2.31.0
 fake-useragent==1.2.1
 python-dotenv==1.0.0
 webdriver-manager==3.8.6
-
 Flask
+
 🚀 How to Run
 Configure your .env file with your bot token:
 TELEGRAM_TOKEN=your_token_here
