@@ -146,7 +146,10 @@ async def show_redes_sociais(query, context):
         ("📸 Instagram", "https://www.instagram.com/furiagg/"),
         ("📘 Facebook", "https://www.facebook.com/furiagg"),
         ("📺 YouTube", "https://www.youtube.com/c/FURIAgg"),
-        ("🎵 TikTok", "https://www.tiktok.com/@furiagg")
+        ("🎵 TikTok", "https://www.tiktok.com/@furiagg"),
+        ("🎮 Twitch", "https://www.twitch.tv/furiatv"),
+        ("📱 Discord", "https://discord.gg/furia")
+        
     ]
     
     await context.bot.send_message(
