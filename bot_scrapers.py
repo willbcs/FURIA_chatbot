@@ -27,7 +27,7 @@ def setup_driver():
 # SCRAPING DE NOTÍCIAS
 # ======================================
 async def fetch_latest_news():
-    """Obtém as últimas notícias da FURIA"""
+    """Obtém as últimas notícias da FURIA com data no formato dd-mm-yyyy"""
     driver = None
     try:
         driver = setup_driver()
@@ -47,13 +47,20 @@ async def fetch_latest_news():
                 if not link.startswith('http'):
                     link = f"https://themove.gg{link}"
                 
+                # ---- FORMATO DA DATA ALTERADO AQUI ----
                 date_elem = card.select_one("time.arr__timeago")
-                date = date_elem['title'].split(' ')[0] if date_elem else ""
+                if date_elem:
+                    original_date = date_elem['title'].split(' ')[0]  # Pega "2024-05-20"
+                    year, month, day = original_date.split('-')
+                    formatted_date = f"{day}-{month}-{year}"  # Vira "20-05-2024"
+                else:
+                    formatted_date = ""
+                # ----------------------------------------
                 
                 news_items.append({
                     'title': title,
                     'link': link,
-                    'date': date
+                    'date': formatted_date  # Usa a data formatada
                 })
             except Exception as e:
                 logger.error(f"Erro ao processar card: {str(e)}")
@@ -178,10 +185,18 @@ async def fetch_last_matches():
                     match_type = cols[2].get_text(strip=True)
                     tournament = cols[5].get_text(strip=True)
                     
-                    opponent = cols[8].find('div', class_='block-team')
-                    opponent = opponent.get_text(strip=True) if opponent else cols[8].get_text(strip=True)
-                    opponent = opponent.replace('FURIA', '').strip()
+                    # Extrai o adversário com nome completo (se disponível)
+                    opponent_div = cols[8].find('div', class_='block-team')
+                    if opponent_div:
+                        opponent_tag = opponent_div.find('a') or opponent_div.find('span', class_='team-template-text')
+                        if opponent_tag and opponent_tag.has_attr('title'):
+                            opponent = opponent_tag['title']
+                        else:
+                            opponent = opponent_div.get_text(strip=True)
+                    else:
+                        opponent = cols[8].get_text(strip=True)
                     
+                    opponent = opponent.replace('FURIA', '').strip()
                     score = cols[7].get_text(strip=True).replace(':', '×')
                     
                     matches.append({

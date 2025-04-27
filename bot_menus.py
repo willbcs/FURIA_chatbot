@@ -271,7 +271,7 @@ async def show_noticias(query, context):
             )
             return
         
-        message = ["<b>📰 ÚLTIMAS NOTÍCIAS DA FURIA</b>\n"]
+        message = ["<b>📰 ÚLTIMAS NOTÍCIAS DA FURIA CS</b>\n"]
         for idx, item in enumerate(news, 1):
             date_str = f" ({item['date']})" if item['date'] else ""
             message.append(f"{idx}. <a href='{item['link']}'>{item['title']}</a>{date_str}\n")

@@ -5,7 +5,8 @@
 🤖 Bot de Telegram para FURIA CS
 FURIA Logo
 
-Bot não-oficial para acompanhar a FURIA Esports no cenário de Counter-Strike.
+Bot não-oficial para acompanhar a FURIA Esports no cenário de Counter-Strike. 
+Este projeto foi criado como parte do desafio técnico proposto pela FURIA para o processo seletivo da vaga de Assistente de Engenharia de Software.
 
 📦 Dependências
 Crie e ative um ambiente virtual (recomendado):
@@ -39,6 +40,7 @@ python bot_principal.py
 FURIA Logo
 
 Unofficial bot to track FURIA Esports in Counter-Strike scene.
+This project was developed as part of FURIA's technical challenge for the Software Engineering Assistant position
 
 📦 Dependencies
 Create and activate virtual environment (recommended):
