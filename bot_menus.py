@@ -201,7 +201,7 @@ async def show_shop(query, context):
                 
                 # Segunda linha de acessórios
                 [
-                    InlineKeyboardButton("🧢 Buckets", url='https://www.furia.gg/produtos/acessorios/buckets'),
+                    InlineKeyboardButton("🎩 Buckets", url='https://www.furia.gg/produtos/acessorios/buckets'),
                     InlineKeyboardButton("🎒 Mochilas", url='https://www.furia.gg/produtos/acessorios/mochilas')
                 ],
                 
