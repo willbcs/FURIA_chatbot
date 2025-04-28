@@ -5,8 +5,6 @@ app = Flask(__name__)
 @app.route('/')
 def home():
     logo_url = url_for('static', filename='furia_logo.png')
-    ak47_url = url_for('static', filename='ak47.png')
-    awp_url = url_for('static', filename='awp.png')
 
     HTML_PAGE = f"""
 <!DOCTYPE html>
@@ -18,10 +16,10 @@ def home():
 
     <!-- FontAwesome para ícones -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
-    
+
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Oxanium:wght@400;700&family=Rajdhani:wght@600&display=swap');
-        
+
         :root {{
             --furia-yellow: #FFD700;
             --furia-black: #111111;
@@ -29,13 +27,11 @@ def home():
             --furia-red: #E63946;
             --neon-effect: 0 0 10px var(--furia-yellow), 0 0 20px var(--furia-yellow);
         }}
-        
+
         body {{
+            background: url('/static/cfc7cd3f-f4af-4681-aa24-2a0cebcf4914.jpg') no-repeat center center fixed;
+            background-size: cover;
             background-color: var(--furia-black);
-            background-image: 
-                radial-gradient(circle at 20% 30%, rgba(230, 57, 70, 0.15) 0%, transparent 20%),
-                radial-gradient(circle at 80% 70%, rgba(255, 215, 0, 0.15) 0%, transparent 20%),
-                linear-gradient(to bottom, #111 0%, #1a1a1a 100%);
             color: white;
             font-family: 'Oxanium', sans-serif;
             text-align: center;
@@ -44,25 +40,24 @@ def home():
             min-height: 100vh;
             overflow-x: hidden;
         }}
-        
+
         .container {{
             max-width: 800px;
             margin: 0 auto;
             padding: 40px 20px;
             position: relative;
         }}
-        
+
         .logo-container {{
-            position: relative;
             margin-bottom: 30px;
         }}
-        
+
         .logo {{
             width: 180px;
             filter: drop-shadow(0 0 15px var(--furia-yellow));
             animation: pulse 2s infinite alternate;
         }}
-        
+
         h1 {{
             color: var(--furia-yellow);
             font-family: 'Rajdhani', sans-serif;
@@ -73,7 +68,7 @@ def home():
             text-shadow: var(--neon-effect);
             filter: brightness(0.25) drop-shadow(0 0 5px var(--furia-yellow));
         }}
-        
+
         p {{
             font-size: 1.2rem;
             line-height: 1.6;
@@ -82,12 +77,12 @@ def home():
             margin-left: auto;
             margin-right: auto;
         }}
-        
+
         .highlight {{
             color: var(--furia-yellow);
             font-weight: bold;
         }}
-        
+
         a.button {{
             display: inline-block;
             margin-top: 20px;
@@ -102,112 +97,59 @@ def home():
             text-transform: uppercase;
             letter-spacing: 1px;
             transition: all 0.3s ease;
-            position: relative;
-            overflow: hidden;
             box-shadow: 0 0 15px var(--furia-yellow);
         }}
-        
+
         a.button:hover {{
             background-color: transparent;
             color: var(--furia-yellow);
             transform: translateY(-3px);
             box-shadow: 0 0 25px var(--furia-yellow);
         }}
-        
-        .cs-elements {{
-            position: absolute;
-            width: 100%;
-            height: 100%;
-            top: 0;
-            left: 0;
-            pointer-events: none;
-            z-index: -1;
-        }}
-        
-        .ak47 {{
-            position: absolute;
-            right: -35%;
-            bottom: 5%;
-            width: 300px;
-            transform: rotate(15deg);
-            opacity: 0.25;
-            filter: drop-shadow(0 0 5px var(--furia-yellow));
-        }}
-        
-        .awp {{
-            position: absolute;
-            left: -38%;
-            top: 28%;
-            width: 300px;
-            transform: rotate(-10deg);
-            opacity: 0.25;
-            filter: drop-shadow(0 0 5px var(--furia-red));
-        }}
-        
+
         @keyframes pulse {{
             0% {{ transform: scale(1); }}
             100% {{ transform: scale(1.05); }}
         }}
-        
+
         .social-links {{
             margin-top: 50px;
         }}
-        
+
         .social-links a {{
             color: white;
             margin: 0 10px;
             font-size: 2rem;
             transition: color 0.3s;
         }}
-        
+
         .social-links a:hover {{
             color: var(--furia-yellow);
         }}
-        
+
         .counter {{
             font-family: 'Rajdhani', sans-serif;
             color: var(--furia-yellow);
             font-size: 1.5rem;
             margin-top: 30px;
         }}
-        
-        @media (max-width: 768px) and (orientation: portrait) {{
-            .ak47, .awp {{
-                display: none;
-            }}
+
+        @media (max-width: 768px) {{
             h1 {{
                 font-size: 2rem;
             }}
-        }}
-        
-        @media (max-width: 900px) and (orientation: landscape) {{
-            .ak47, .awp {{
-                display: none;
-            }}
-            .container {{
-                padding: 20px 10px;
-                max-width: 100%;
-                min-height: 100vh;
-                overflow: visible;
-            }}
-            h1 {{
-                font-size: 1.8rem;
-                margin: 10px 0;
-            }}
             p {{
                 font-size: 1rem;
-                margin-bottom: 20px;
             }}
             .button {{
                 padding: 12px 25px;
                 font-size: 1rem;
             }}
             .logo {{
-                width: 120px;
+                width: 140px;
             }}
             .counter {{
                 font-size: 1.2rem;
-                margin-top: 20px;
             }}
             .social-links {{
                 margin-top: 30px;
@@ -218,16 +160,13 @@ def home():
 </head>
 <body>
     <div class="container">
-        <div class="cs-elements">
-            <img src="{ak47_url}" class="ak47" alt="CSGO AK47">
-            <img src="{awp_url}" class="awp" alt="CSGO AWP">
-        </div>
 
         <div class="logo-container">
             <img src="{logo_url}" class="logo" alt="FURIA Logo">
         </div>
 
         <h1>FURIOSO BOT</h1>
+
         <p>O <span class="highlight">chat oficial</span> para você acompanhar e interagir com o time de <span class="highlight">CS da FURIA</span>! Receba notícias, resultados e muito mais diretamente no seu Telegram.</p>
 
         <a class="button" href="https://t.me/Furiosocs2Bot" target="_blank">ENTRAR NO CHAT</a>
