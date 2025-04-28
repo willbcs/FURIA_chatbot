@@ -53,7 +53,7 @@ def home():
         }}
 
         .logo {{
-            width: 180px;
+            width: 350px;
             filter: drop-shadow(0 0 15px var(--furia-yellow));
             animation: pulse 2s infinite alternate;
         }}
@@ -146,7 +146,7 @@ def home():
                 font-size: 1rem;
             }}
             .logo {{
-                width: 140px;
+                width: 350px;
             }}
             .counter {{
                 font-size: 1.2rem;
