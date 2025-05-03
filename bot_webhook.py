@@ -18,31 +18,23 @@ app = Flask(__name__)
 
 # Variáveis de ambiente
 TOKEN = os.getenv("TELEGRAM_TOKEN")
-WEBHOOK_URL = os.getenv("WEBHOOK_URL")  # Ex: https://seu-bot.onrender.com/webhook
-PORT = int(os.environ.get("PORT", 5001))  # Porta diferente da landing page
+WEBHOOK_URL = os.getenv("WEBHOOK_URL")
+PORT = int(os.environ.get("PORT", 5001))
 
 async def post_init(application: Application) -> None:
-    """Configura o webhook quando o bot inicia"""
     if WEBHOOK_URL:
         await application.bot.set_webhook(url=WEBHOOK_URL)
         logger.info(f"Webhook configurado para: {WEBHOOK_URL}")
 
 def create_app():
-    """Cria e configura a aplicação do bot"""
-    # Cria a aplicação do Telegram
     application = Application.builder().token(TOKEN).post_init(post_init).build()
-    
-    # Configura os handlers
     setup_handlers(application)
-    
     return application
 
-# Cria a aplicação do bot
 bot_app = create_app()
 
 @app.route('/webhook', methods=['POST'])
 async def webhook():
-    """Endpoint principal para receber atualizações do Telegram"""
     if request.method == "POST":
         try:
             json_data = await request.get_json()
@@ -56,23 +48,18 @@ async def webhook():
 
 @app.route('/ping', methods=['GET'])
 def ping():
-    """Endpoint de health check para manter o serviço ativo"""
     return Response(response="pong", status=200)
 
 @app.route('/set_webhook', methods=['GET'])
-def set_webhook_route():
-    """Endpoint para configurar o webhook manualmente"""
+async def set_webhook_route():  # Agora é async
     try:
         if not WEBHOOK_URL:
             return Response(response="WEBHOOK_URL não configurada", status=400)
         
-        # Usa asyncio para chamar a função assíncrona
-        result = asyncio.run(bot_app.bot.set_webhook(url=WEBHOOK_URL))
+        await bot_app.bot.set_webhook(url=WEBHOOK_URL)
         return Response(response=f"Webhook configurado para: {WEBHOOK_URL}", status=200)
     except Exception as e:
         logger.error(f"Erro ao configurar webhook: {str(e)}")
         return Response(response="Erro ao configurar webhook", status=500)
 
-if __name__ == '__main__':
-    # Inicia o servidor Flask
-    app.run(host='0.0.0.0', port=PORT)
+# Remova completamente o bloco if __name__ == '__main__'
