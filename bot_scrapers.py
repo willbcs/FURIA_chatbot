@@ -20,56 +20,51 @@ logger = logging.getLogger(__name__)
 # CONFIGURAÇÕES GLOBAIS
 # ======================================
 def setup_driver():
-    """Configura o driver do Selenium para ambientes containerizados com fallback seguro"""
+    """Configura o driver do Selenium com fallback robusto"""
     from selenium import webdriver
     from selenium.webdriver.chrome.service import Service
-    import tempfile
-    import os
+    from selenium.webdriver.chrome.options import Options
     import logging
+    import os
+
+    chrome_options = Options()
     
-    chrome_options = webdriver.ChromeOptions()
-    
-    # Configurações obrigatórias para containers
+    # Configurações essenciais para containers
     chrome_options.add_argument("--headless=new")
     chrome_options.add_argument("--no-sandbox")
     chrome_options.add_argument("--disable-dev-shm-usage")
     chrome_options.add_argument("--disable-gpu")
-    chrome_options.add_argument("--window-size=1280x1696")  # Corrigido formato
+    chrome_options.add_argument("--window-size=1280,1696")
     
-    # Configurações de isolamento
-    chrome_options.add_argument(f"--user-data-dir={tempfile.mkdtemp()}")
-    chrome_options.add_argument("--remote-debugging-port=9222")
-    
-    # Otimizações comprovadas
+    # Configurações de segurança
     chrome_options.add_argument("--disable-blink-features=AutomationControlled")
     chrome_options.add_experimental_option("excludeSwitches", ["enable-automation"])
     chrome_options.add_experimental_option("useAutomationExtension", False)
-    
+
     try:
-        # Tenta usar o ChromeDriver pré-instalado no Dockerfile primeiro
+        # Tenta usar o ChromeDriver instalado manualmente
         service = Service(
-            executable_path='/usr/local/bin/chromedriver',
-            log_path=os.devnull
+            executable_path=os.getenv('CHROMEDRIVER_PATH', '/usr/local/bin/chromedriver'),
+            log_output=os.devnull
         )
         driver = webdriver.Chrome(service=service, options=chrome_options)
-        logging.info("ChromeDriver inicializado com instalação manual")
+        logging.info("Driver inicializado com ChromeDriver manual")
         return driver
     except Exception as e:
-        logging.warning(f"Falha ao usar ChromeDriver manual: {str(e)}. Tentando webdriver-manager...")
+        logging.warning(f"Falha ao usar ChromeDriver manual: {str(e)}")
         try:
             # Fallback para webdriver-manager
             from webdriver_manager.chrome import ChromeDriverManager
             service = Service(
                 ChromeDriverManager().install(),
-                log_path=os.devnull
+                log_output=os.devnull
             )
             driver = webdriver.Chrome(service=service, options=chrome_options)
-            logging.info("ChromeDriver inicializado via webdriver-manager")
+            logging.info("Driver inicializado via webdriver-manager")
             return driver
         except Exception as fallback_error:
-            logging.error(f"Falha crítica ao inicializar ChromeDriver: {str(fallback_error)}")
-            raise RuntimeError("Não foi possível inicializar o WebDriver. Verifique os logs para detalhes.")
-
+            logging.error(f"Falha crítica: {str(fallback_error)}")
+            raise RuntimeError("Não foi possível inicializar o WebDriver após tentativas")
 # ======================================
 # SCRAPING DE NOTÍCIAS
 # ======================================
