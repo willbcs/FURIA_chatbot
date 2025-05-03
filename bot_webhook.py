@@ -35,23 +35,33 @@ bot_app = create_app()
 
 @app.route('/webhook', methods=['POST'])
 async def webhook():
+    """Endpoint assíncrono para atualizações do Telegram"""
     if request.method == "POST":
         try:
-            json_data = await request.get_json()
+            # request.get_json() não precisa de await no Flask 2.0+
+            json_data = request.get_json()
+            
+            if not json_data:
+                logger.error("Dados JSON vazios ou inválidos")
+                return Response(status=400)
+                
             update = Update.de_json(json_data, bot_app.bot)
             await bot_app.process_update(update)
             return Response(status=200)
+            
         except Exception as e:
-            logger.error(f"Erro no webhook: {str(e)}")
+            logger.error(f"Erro no webhook: {str(e)}", exc_info=True)
             return Response(status=500)
     return Response(status=405)
 
 @app.route('/ping', methods=['GET'])
 def ping():
+    """Endpoint de health check"""
     return Response(response="pong", status=200)
 
 @app.route('/set_webhook', methods=['GET'])
-async def set_webhook_route():  # Agora é async
+async def set_webhook_route():
+    """Configuração manual do webhook"""
     try:
         if not WEBHOOK_URL:
             return Response(response="WEBHOOK_URL não configurada", status=400)
@@ -59,7 +69,5 @@ async def set_webhook_route():  # Agora é async
         await bot_app.bot.set_webhook(url=WEBHOOK_URL)
         return Response(response=f"Webhook configurado para: {WEBHOOK_URL}", status=200)
     except Exception as e:
-        logger.error(f"Erro ao configurar webhook: {str(e)}")
+        logger.error(f"Erro ao configurar webhook: {str(e)}", exc_info=True)
         return Response(response="Erro ao configurar webhook", status=500)
-
-# Remova completamente o bloco if __name__ == '__main__'

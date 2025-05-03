@@ -5,7 +5,7 @@ requests==2.31.0
 fake-useragent==1.2.1
 python-dotenv==1.0.0
 webdriver-manager==3.8.6
-Flask[async]>=2.0.0  
-hypercorn>=0.14.0   
+Flask[async]==2.3.2  # Versão com suporte nativo a async
+hypercorn==0.14.3   
 webdriver-manager==3.8.6
 uvicorn>=0.22.0
