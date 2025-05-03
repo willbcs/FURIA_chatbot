@@ -8,8 +8,6 @@ import requests
 from fake_useragent import UserAgent
 import time
 import logging
-from selenium.webdriver.chrome.service import Service
-from webdriver_manager.chrome import ChromeDriverManager
 import asyncio
 
 logger = logging.getLogger(__name__)
@@ -18,10 +16,13 @@ logger = logging.getLogger(__name__)
 # CONFIGURAÇÕES GLOBAIS
 # ======================================
 def setup_driver():
+    """Configura o driver do Selenium"""
     options = Options()
     options.add_argument("--headless=new")
-    service = Service(ChromeDriverManager().install())  # Isso resolve automaticamente
-    return webdriver.Chrome(service=service, options=options)
+    options.add_argument("--window-size=1200,800")
+    options.add_argument("--log-level=3")
+    return webdriver.Chrome(options=options)
+
 # ======================================
 # SCRAPING DE NOTÍCIAS
 # ======================================
