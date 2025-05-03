@@ -27,12 +27,25 @@ async def post_init(application: Application) -> None:
         logger.info(f"Webhook configurado para: {WEBHOOK_URL}")
 
 def create_app():
-    application = Application.builder().token(TOKEN).post_init(post_init).build()
+    # 1. Crie a instância do bot
+    application = Application.builder().token(TOKEN).build()
+    
+    # 2. Configure handlers ANTES de inicializar
     setup_handlers(application)
     
-    # Inicialização explícita
-    application.initialize()
+    # 3. Inicialização explícita e configuração do webhook
+    async def init_webhook(app):
+        await app.initialize()
+        if WEBHOOK_URL:
+            await app.bot.set_webhook(WEBHOOK_URL)
+
+    # Executa a inicialização síncrona
+    asyncio.get_event_loop().run_until_complete(init_webhook(application))
+    
     return application
+
+# Cria a aplicação JÁ INICIALIZADA
+bot_app = create_app()
 
 bot_app = create_app()
 
@@ -40,15 +53,17 @@ bot_app = create_app()
 async def webhook():
     if request.method == "POST":
         try:
-            if not bot_app.initialized:
-                bot_app.initialize()  # Inicialização condicional
-            
             json_data = request.get_json()
             update = Update.de_json(json_data, bot_app.bot)
+            
+            # Verificação extra de inicialização
+            if not bot_app.initialized:
+                await bot_app.initialize()
+                
             await bot_app.process_update(update)
             return Response(status=200)
         except Exception as e:
-            logger.error(f"Erro no webhook: {str(e)}", exc_info=True)
+            logger.error(f"Erro crítico no webhook: {str(e)}", exc_info=True)
             return Response(status=500)
     return Response(status=405)
 
