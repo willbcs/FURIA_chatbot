@@ -1,7 +1,7 @@
-# Usa uma imagem base otimizada para Python + Selenium
+# Imagem base com Python 3.10 e Slim (otimizada para containers)
 FROM python:3.10-slim
 
-# Instala dependências do sistema (minimalistas)
+# 1. Instalação de dependências do sistema
 RUN apt-get update && apt-get install -y \
     wget \
     unzip \
@@ -17,38 +17,39 @@ RUN apt-get update && apt-get install -y \
     --no-install-recommends \
     && rm -rf /var/lib/apt/lists/*
 
-# Instala Google Chrome Stable e Chromedriver compatível
-RUN wget -q -O - https://dl.google.com/linux/linux_signing_key.pub | apt-key add - && \
-    echo "deb [arch=amd64] http://dl.google.com/linux/chrome/deb/ stable main" > /etc/apt/sources.list.d/google-chrome.list && \
+# 2. Instalação do Google Chrome (versão estável)
+RUN wget -q -O - https://dl.google.com/linux/linux_signing_key.pub | gpg --dearmor -o /usr/share/keyrings/googlechrome-linux-keyring.gpg && \
+    echo "deb [arch=amd64 signed-by=/usr/share/keyrings/googlechrome-linux-keyring.gpg] http://dl.google.com/linux/chrome/deb/ stable main" > /etc/apt/sources.list.d/google-chrome.list && \
     apt-get update && \
     apt-get install -y google-chrome-stable --no-install-recommends && \
     rm -rf /var/lib/apt/lists/*
 
-# Instala o ChromeDriver usando o novo endpoint Chrome-for-Testing
-RUN CHROME_VERSION=$(google-chrome-stable --version | awk '{print $3}') && \
-    wget -q -O /tmp/chromedriver.zip \
-    "https://edgedl.me.gvt1.com/edgedl/chrome/chrome-for-testing/$CHROME_VERSION/linux64/chromedriver-linux64.zip" && \
+# 3. Instalação do ChromeDriver (solução robusta)
+RUN CHROME_MAJOR_VERSION=$(google-chrome-stable --version | awk '{print $3}' | cut -d'.' -f1) && \
+    LATEST_CHROMEDRIVER=$(wget -qO- "https://chromedriver.storage.googleapis.com/LATEST_RELEASE_$CHROME_MAJOR_VERSION") && \
+    wget -q -O /tmp/chromedriver.zip "https://chromedriver.storage.googleapis.com/$LATEST_CHROMEDRIVER/chromedriver_linux64.zip" && \
     unzip /tmp/chromedriver.zip -d /usr/local/bin/ && \
-    mv /usr/local/bin/chromedriver-linux64/chromedriver /usr/local/bin/ && \
     chmod +x /usr/local/bin/chromedriver && \
-    rm -rf /tmp/chromedriver.zip /usr/local/bin/chromedriver-linux64
+    rm /tmp/chromedriver.zip
 
-# Configura o ambiente de trabalho
+# 4. Configuração do ambiente Python
 WORKDIR /app
 
-# Instala dependências Python (com cache otimizado)
+# Camada separada para dependências (melhora cache do Docker)
 COPY requirements.txt .
 RUN pip install --no-cache-dir --upgrade pip && \
     pip install --no-cache-dir -r requirements.txt
 
-# Copia o código-fonte
+# 5. Cópia do código-fonte
 COPY . .
 
-# Variáveis de ambiente para Selenium
+# 6. Variáveis de ambiente otimizadas
 ENV PYTHONUNBUFFERED=1 \
     CHROME_BIN=/usr/bin/google-chrome \
     CHROMEDRIVER_PATH=/usr/local/bin/chromedriver \
-    DISPLAY=:99
+    DISPLAY=:99 \
+    PIP_NO_CACHE_DIR=1 \
+    PYTHONDONTWRITEBYTECODE=1
 
-# Comando de inicialização
+# 7. Comando de inicialização
 CMD ["python", "bot_principal.py"]

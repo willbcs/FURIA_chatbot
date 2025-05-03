@@ -20,32 +20,55 @@ logger = logging.getLogger(__name__)
 # CONFIGURAÇÕES GLOBAIS
 # ======================================
 def setup_driver():
-    """Configura o driver do Selenium para ambientes containerizados"""
+    """Configura o driver do Selenium para ambientes containerizados com fallback seguro"""
+    from selenium import webdriver
+    from selenium.webdriver.chrome.service import Service
+    import tempfile
+    import os
+    import logging
+    
     chrome_options = webdriver.ChromeOptions()
     
-    # Configurações essenciais para containers
+    # Configurações obrigatórias para containers
     chrome_options.add_argument("--headless=new")
     chrome_options.add_argument("--no-sandbox")
     chrome_options.add_argument("--disable-dev-shm-usage")
     chrome_options.add_argument("--disable-gpu")
-    chrome_options.add_argument("--window-size=1280,1696")
+    chrome_options.add_argument("--window-size=1280x1696")  # Corrigido formato
     
-    # Configurações para evitar conflitos
+    # Configurações de isolamento
     chrome_options.add_argument(f"--user-data-dir={tempfile.mkdtemp()}")
     chrome_options.add_argument("--remote-debugging-port=9222")
     
-    # Otimizações de performance
-    chrome_options.add_argument("--disable-extensions")
-    chrome_options.add_argument("--disable-software-rasterizer")
-    chrome_options.add_argument("--disable-infobars")
+    # Otimizações comprovadas
+    chrome_options.add_argument("--disable-blink-features=AutomationControlled")
+    chrome_options.add_experimental_option("excludeSwitches", ["enable-automation"])
+    chrome_options.add_experimental_option("useAutomationExtension", False)
     
-    # Usa webdriver-manager para gerenciar automaticamente o ChromeDriver
-    service = Service(
-        ChromeDriverManager().install(),
-        log_path=os.devnull  # Desativa logs do ChromeDriver
-    )
-    
-    return webdriver.Chrome(service=service, options=chrome_options)
+    try:
+        # Tenta usar o ChromeDriver pré-instalado no Dockerfile primeiro
+        service = Service(
+            executable_path='/usr/local/bin/chromedriver',
+            log_path=os.devnull
+        )
+        driver = webdriver.Chrome(service=service, options=chrome_options)
+        logging.info("ChromeDriver inicializado com instalação manual")
+        return driver
+    except Exception as e:
+        logging.warning(f"Falha ao usar ChromeDriver manual: {str(e)}. Tentando webdriver-manager...")
+        try:
+            # Fallback para webdriver-manager
+            from webdriver_manager.chrome import ChromeDriverManager
+            service = Service(
+                ChromeDriverManager().install(),
+                log_path=os.devnull
+            )
+            driver = webdriver.Chrome(service=service, options=chrome_options)
+            logging.info("ChromeDriver inicializado via webdriver-manager")
+            return driver
+        except Exception as fallback_error:
+            logging.error(f"Falha crítica ao inicializar ChromeDriver: {str(fallback_error)}")
+            raise RuntimeError("Não foi possível inicializar o WebDriver. Verifique os logs para detalhes.")
 
 # ======================================
 # SCRAPING DE NOTÍCIAS
