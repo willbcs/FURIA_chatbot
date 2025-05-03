@@ -29,26 +29,24 @@ async def post_init(application: Application) -> None:
 def create_app():
     application = Application.builder().token(TOKEN).post_init(post_init).build()
     setup_handlers(application)
+    
+    # Inicialização explícita
+    application.initialize()
     return application
 
 bot_app = create_app()
 
 @app.route('/webhook', methods=['POST'])
 async def webhook():
-    """Endpoint assíncrono para atualizações do Telegram"""
     if request.method == "POST":
         try:
-            # request.get_json() não precisa de await no Flask 2.0+
-            json_data = request.get_json()
+            if not bot_app.initialized:
+                bot_app.initialize()  # Inicialização condicional
             
-            if not json_data:
-                logger.error("Dados JSON vazios ou inválidos")
-                return Response(status=400)
-                
+            json_data = request.get_json()
             update = Update.de_json(json_data, bot_app.bot)
             await bot_app.process_update(update)
             return Response(status=200)
-            
         except Exception as e:
             logger.error(f"Erro no webhook: {str(e)}", exc_info=True)
             return Response(status=500)
