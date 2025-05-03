@@ -4,6 +4,7 @@ from telegram import Update
 from telegram.ext import Application, ContextTypes, CallbackContext
 from bot_menus import setup_handlers
 from flask import Flask, request, Response
+import asyncio
 
 # Configuração básica de logging
 logging.basicConfig(
@@ -59,13 +60,14 @@ def ping():
     return Response(response="pong", status=200)
 
 @app.route('/set_webhook', methods=['GET'])
-async def set_webhook_route():
+def set_webhook_route():
     """Endpoint para configurar o webhook manualmente"""
     try:
         if not WEBHOOK_URL:
             return Response(response="WEBHOOK_URL não configurada", status=400)
         
-        await bot_app.bot.set_webhook(url=WEBHOOK_URL)
+        # Usa asyncio para chamar a função assíncrona
+        result = asyncio.run(bot_app.bot.set_webhook(url=WEBHOOK_URL))
         return Response(response=f"Webhook configurado para: {WEBHOOK_URL}", status=200)
     except Exception as e:
         logger.error(f"Erro ao configurar webhook: {str(e)}")
