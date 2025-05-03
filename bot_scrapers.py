@@ -1,14 +1,18 @@
+import logging
 from selenium import webdriver
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
-from selenium.webdriver.chrome.options import Options
+from selenium.webdriver.chrome.service import Service
+from webdriver_manager.chrome import ChromeDriverManager
 from bs4 import BeautifulSoup
 import requests
 from fake_useragent import UserAgent
 import time
-import logging
 import asyncio
+import tempfile
+import os
+from datetime import datetime
 
 logger = logging.getLogger(__name__)
 
@@ -16,23 +20,44 @@ logger = logging.getLogger(__name__)
 # CONFIGURAÇÕES GLOBAIS
 # ======================================
 def setup_driver():
-    """Configura o driver do Selenium"""
-    options = Options()
-    options.add_argument("--headless=new")
-    options.add_argument("--window-size=1200,800")
-    options.add_argument("--log-level=3")
-    return webdriver.Chrome(options=options)
+    """Configura o driver do Selenium para ambientes containerizados"""
+    chrome_options = webdriver.ChromeOptions()
+    
+    # Configurações essenciais para containers
+    chrome_options.add_argument("--headless=new")
+    chrome_options.add_argument("--no-sandbox")
+    chrome_options.add_argument("--disable-dev-shm-usage")
+    chrome_options.add_argument("--disable-gpu")
+    chrome_options.add_argument("--window-size=1280,1696")
+    
+    # Configurações para evitar conflitos
+    chrome_options.add_argument(f"--user-data-dir={tempfile.mkdtemp()}")
+    chrome_options.add_argument("--remote-debugging-port=9222")
+    
+    # Otimizações de performance
+    chrome_options.add_argument("--disable-extensions")
+    chrome_options.add_argument("--disable-software-rasterizer")
+    chrome_options.add_argument("--disable-infobars")
+    
+    # Usa webdriver-manager para gerenciar automaticamente o ChromeDriver
+    service = Service(
+        ChromeDriverManager().install(),
+        log_path=os.devnull  # Desativa logs do ChromeDriver
+    )
+    
+    return webdriver.Chrome(service=service, options=chrome_options)
 
 # ======================================
 # SCRAPING DE NOTÍCIAS
 # ======================================
 async def fetch_latest_news():
-    """Obtém as últimas notícias da FURIA com data no formato dd-mm-yyyy"""
+    """Obtém as últimas notícias da FURIA com tratamento robusto de erros"""
     driver = None
     try:
         driver = setup_driver()
         driver.get("https://themove.gg/esports/cs")
         
+        # Espera explícita com timeout
         WebDriverWait(driver, 15).until(
             EC.presence_of_element_located((By.CSS_SELECTOR, "[data-test-id='story-card']"))
         )
@@ -47,29 +72,30 @@ async def fetch_latest_news():
                 if not link.startswith('http'):
                     link = f"https://themove.gg{link}"
                 
-                # ---- FORMATO DA DATA ALTERADO AQUI ----
+                # Formata a data
                 date_elem = card.select_one("time.arr__timeago")
-                if date_elem:
-                    original_date = date_elem['title'].split(' ')[0]  # Pega "2024-05-20"
-                    year, month, day = original_date.split('-')
-                    formatted_date = f"{day}-{month}-{year}"  # Vira "20-05-2024"
-                else:
-                    formatted_date = ""
-                # ----------------------------------------
+                formatted_date = ""
+                if date_elem and 'title' in date_elem.attrs:
+                    try:
+                        original_date = date_elem['title'].split(' ')[0]
+                        year, month, day = original_date.split('-')
+                        formatted_date = f"{day}-{month}-{year}"
+                    except Exception as e:
+                        logger.warning(f"Erro ao formatar data: {str(e)}")
                 
                 news_items.append({
                     'title': title,
                     'link': link,
-                    'date': formatted_date  # Usa a data formatada
+                    'date': formatted_date
                 })
             except Exception as e:
-                logger.error(f"Erro ao processar card: {str(e)}")
+                logger.warning(f"Erro ao processar card de notícia: {str(e)}")
                 continue
         
         return news_items if news_items else None
         
     except Exception as e:
-        logger.error(f"Erro no scraping de notícias: {str(e)}")
+        logger.error(f"Erro crítico no scraping de notícias: {str(e)}", exc_info=True)
         return None
     finally:
         if driver:
@@ -79,7 +105,7 @@ async def fetch_latest_news():
 # SCRAPING DA EQUIPE
 # ======================================
 async def fetch_team_data():
-    """Obtém dados atualizados da equipe"""
+    """Obtém dados da equipe usando requests + BeautifulSoup"""
     url = 'https://liquipedia.net/counterstrike/FURIA'
     ua = UserAgent()
     
@@ -95,14 +121,16 @@ async def fetch_team_data():
                 url,
                 headers=headers,
                 cookies={'skipmobile': '1'},
-                timeout=10
+                timeout=15
             )
             response.raise_for_status()
             
-            soup = BeautifulSoup(response.text, 'html.parser')
-            if "403 Forbidden" in soup.text:
+            if "403 Forbidden" in response.text:
+                logger.warning("Recebido 403 Forbidden, tentando novamente...")
+                time.sleep(2 ** attempt)
                 continue
                 
+            soup = BeautifulSoup(response.text, 'html.parser')
             roster_table = soup.find('table', class_='roster-card')
             if not roster_table:
                 return None
@@ -138,7 +166,7 @@ async def fetch_team_data():
                         f"Desde: {join_date}\n"
                     )
                 except Exception as e:
-                    logger.error(f"Erro ao processar jogador: {str(e)}")
+                    logger.warning(f"Erro ao processar jogador: {str(e)}")
                     continue
             
             return team_info if team_info else None
@@ -147,13 +175,14 @@ async def fetch_team_data():
             logger.warning(f"Tentativa {attempt + 1} falhou: {str(e)}")
             time.sleep(2 ** attempt)
     
+    logger.error("Falha após 3 tentativas de scraping da equipe")
     return None
 
 # ======================================
 # SCRAPING DE RESULTADOS
 # ======================================
 async def fetch_last_matches():
-    """Obtém os últimos jogos da FURIA"""
+    """Obtém os últimos jogos da FURIA com tratamento de erros"""
     url = 'https://liquipedia.net/counterstrike/FURIA/Matches'
     ua = UserAgent()
     
@@ -163,7 +192,7 @@ async def fetch_last_matches():
                 url,
                 headers={'User-Agent': ua.random},
                 cookies={'skipmobile': '1'},
-                timeout=15
+                timeout=20
             )
             response.raise_for_status()
             
@@ -174,7 +203,7 @@ async def fetch_last_matches():
                 return None
                 
             matches = []
-            for row in results_table.find_all('tr')[1:6]:  # Apenas 5 linhas
+            for row in results_table.find_all('tr')[1:6]:
                 try:
                     cols = row.find_all('td')
                     if len(cols) < 9:
@@ -185,14 +214,10 @@ async def fetch_last_matches():
                     match_type = cols[2].get_text(strip=True)
                     tournament = cols[5].get_text(strip=True)
                     
-                    # Extrai o adversário com nome completo (se disponível)
                     opponent_div = cols[8].find('div', class_='block-team')
                     if opponent_div:
                         opponent_tag = opponent_div.find('a') or opponent_div.find('span', class_='team-template-text')
-                        if opponent_tag and opponent_tag.has_attr('title'):
-                            opponent = opponent_tag['title']
-                        else:
-                            opponent = opponent_div.get_text(strip=True)
+                        opponent = opponent_tag['title'] if opponent_tag and opponent_tag.has_attr('title') else opponent_div.get_text(strip=True)
                     else:
                         opponent = cols[8].get_text(strip=True)
                     
@@ -208,33 +233,34 @@ async def fetch_last_matches():
                         'Placar': score
                     })
                 except Exception as e:
-                    logger.warning(f"Erro ao processar jogo: {str(e)}")
+                    logger.warning(f"Erro ao processar linha de jogo: {str(e)}")
                     continue
             
             return matches if matches else None
             
         except Exception as e:
             logger.warning(f"Tentativa {attempt + 1} falhou: {str(e)}")
-            time.sleep(1 + attempt)
+            time.sleep(2 + attempt)
     
+    logger.error("Falha após 3 tentativas de scraping de resultados")
     return None
 
 # ======================================
 # SCRAPING DE CAMPEONATOS
 # ======================================
 async def fetch_upcoming_tournaments():
-    """Obtém os próximos campeonatos"""
+    """Obtém os próximos campeonatos com Selenium otimizado"""
     driver = None
     try:
         driver = setup_driver()
         driver.get("https://draft5.gg/equipe/330-FURIA/campeonatos")
         
-        WebDriverWait(driver, 15).until(
+        WebDriverWait(driver, 20).until(
             EC.presence_of_element_located((By.CSS_SELECTOR, "a.TournamentCard__TournamentCardContainer-sc-1vb6wff-0"))
         )
         
         tournaments = []
-        for card in driver.find_elements(By.CSS_SELECTOR, "a.TournamentCard__TournamentCardContainer-sc-1vb6wff-0"):
+        for card in driver.find_elements(By.CSS_SELECTOR, "a.TournamentCard__TournamentCardContainer-sc-1vb6wff-0")[:5]:
             try:
                 link = card.get_attribute("href")
                 if link and link.startswith("/"):
@@ -251,13 +277,13 @@ async def fetch_upcoming_tournaments():
                     'link': link or "https://draft5.gg"
                 })
             except Exception as e:
-                logger.error(f"Erro ao processar torneio: {str(e)}")
+                logger.warning(f"Erro ao processar card de torneio: {str(e)}")
                 continue
         
         return tournaments if tournaments else None
         
     except Exception as e:
-        logger.error(f"Erro no scraping de torneios: {str(e)}")
+        logger.error(f"Erro crítico no scraping de torneios: {str(e)}", exc_info=True)
         return None
     finally:
         if driver:
