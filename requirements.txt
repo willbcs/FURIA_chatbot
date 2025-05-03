@@ -1,19 +1,17 @@
-# Dependências principais (core)
-python-telegram-bot==20.8  # Versão estável da série 20.x (compatível com seu código)
-selenium==4.19.0           # Suporte ao Chrome mais recente
-webdriver-manager==4.0.1   # Gerenciamento automático de drivers
+# Dependências principais (testadas em 05/2025)
+python-telegram-bot==20.8  # Versão estável da série 20.x
+selenium==4.19.0           # Compatível com Chrome 122+
+webdriver-manager==4.0.1   # Gerenciador de drivers atualizado
 
-# Web scraping e HTTP
-beautifulsoup4==4.12.3     # Parsing HTML robusto
-requests==2.31.0           # Cliente HTTP (versão estável)
-fake-useragent==1.3.0      # User-agents atualizados
+# Web scraping
+beautifulsoup4==4.12.2     # Parsing HTML estável
+requests==2.31.0           # Cliente HTTP comprovado
+fake-useragent==1.2.1      # User-agents para scraping
 
-# Gerenciamento de ambiente
+# Ambiente e servidor
 python-dotenv==1.0.0       # Variáveis de ambiente
+Flask==2.3.2               # Versão LTS alternativa (compatível)
 
-# Web server
-Flask==3.0.2               # Versão LTS estável
-
-# Dependências de desempenho (opcionais)
-cachetools==5.3.2          # Melhora performance do PTB
-httpx==0.27.0              # Cliente HTTP moderno (para futuras atualizações)
+# Performance (ajustadas para evitar conflitos)
+cachetools==5.3.1          # Versão compatível com PTB 20.x
+httpx==0.26.0              # Versão exigida pelo python-telegram-bot
