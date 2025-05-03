@@ -9,7 +9,6 @@ from fake_useragent import UserAgent
 import time
 import logging
 import asyncio
-import os
 
 logger = logging.getLogger(__name__)
 
@@ -19,26 +18,10 @@ logger = logging.getLogger(__name__)
 def setup_driver():
     """Configura o driver do Selenium"""
     options = Options()
-    
-    # Configuração especial para o Render
-    if os.getenv('RENDER'):
-        options.add_argument("--no-sandbox")
-        options.add_argument("--headless=new")
-        options.add_argument("--disable-dev-shm-usage")
-    else:  # Configuração para desenvolvimento local
-        options.add_argument("--headless=new")
-        options.add_argument("--window-size=1200,800")
-    
+    options.add_argument("--headless=new")
+    options.add_argument("--window-size=1200,800")
     options.add_argument("--log-level=3")
-    
-    # Configuração adicional para evitar erros no Render
-    if os.getenv('RENDER'):
-        from webdriver_manager.chrome import ChromeDriverManager
-        from selenium.webdriver.chrome.service import Service
-        service = Service(ChromeDriverManager().install())
-        return webdriver.Chrome(service=service, options=options)
-    else:
-        return webdriver.Chrome(options=options)
+    return webdriver.Chrome(options=options)
 
 # ======================================
 # SCRAPING DE NOTÍCIAS
